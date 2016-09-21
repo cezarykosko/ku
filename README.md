@@ -1,24 +1,29 @@
 # Ki
 
-**TODO: Add description**
+Ki is a simple pub/sub engine.
 
-## Installation
+## Usage
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+```
+Ku.start
 
-  1. Add `ki` to your list of dependencies in `mix.exs`:
+Ku.subscribe "foo.bar", &MyModule.do_it/1           # Matches only "foo.bar" events.
+Ku.subscribe "foo.*", &MyOtherModule.also_do_it/1   # Matches all "foo. ..." events.
+```
 
-    ```elixir
-    def deps do
-      [{:ki, "~> 0.1.0"}]
-    end
-    ```
+Deliver to both `MyModule.do_it/1` and `MyOtherModule.also_do_it/1`
+```
+Ku.publish "foo.bar", %{bar: "baz"}, %{optional: "metadata object"}
+```
 
-  2. Ensure `ki` is started before your application:
+Deliver only to `MyOtherModule.also_do_it/1`
 
-    ```elixir
-    def application do
-      [applications: [:ki]]
-    end
-    ```
+```
+Ku.publish "foo.lala", %{bar: "baz"}, %{optional: "metadata object"}
+```
 
+Deliver to none
+
+```
+Ku.publish "unhandled_key", %{bar: "baz"}, %{optional: "metadata object"}
+```
