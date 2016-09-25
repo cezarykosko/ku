@@ -18,8 +18,8 @@ defmodule Ki.Subscriber do
   @doc """
   Compiles `pattern` to a regexp using a set of rules:
   - `.` is compiled to `\.`,
-  - `*` is compiled to `(A-Za-z\d_\.)*`,
-  - `?` is compiled to `(A-Za-z\d_\.)`,
+  - `*` is compiled to `[A-Za-z\d_\.]*`,
+  - `?` is compiled to `[A-Za-z\d_\.]`,
   - any alphanumeric character is compiled to itself,
   - `_` is compiled to itself.
 
