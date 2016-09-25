@@ -16,7 +16,9 @@ defmodule Ki.Mixfile do
 
   defp deps do
     [
-      {:gen_stage, "~> 0.4"}
+      {:gen_stage, "~> 0.4"},
+      {:earmark, "~> 0.1", only: :dev},
+      {:ex_doc, "~> 0.11", only: :dev},
     ]
   end
 end
