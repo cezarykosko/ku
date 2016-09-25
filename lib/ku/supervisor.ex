@@ -1,4 +1,4 @@
-defmodule Ki.Supervisor do
+defmodule Ku.Supervisor do
   use Supervisor
 
   @moduledoc """
@@ -12,12 +12,12 @@ defmodule Ki.Supervisor do
   @doc """
   Initializes the `Supervisor` behaviour.
 
-  TODO: create an `ets` table for storing `Ki.SubSupervisor`'s state.
+  TODO: create an `ets` table for storing `Ku.SubSupervisor`'s state.
   """
   def init(_) do
     children =  [
-      worker(Ki.Queue, []),
-      supervisor(Ki.SubSupervisor, [])
+      worker(Ku.Queue, []),
+      supervisor(Ku.SubSupervisor, [])
     ]
     supervise children, strategy: :rest_for_one
   end

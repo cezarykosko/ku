@@ -1,7 +1,7 @@
 defmodule SubscriberTest do
   use ExUnit.Case
   use ExCheck
-  alias Ki.Subscriber
+  alias Ku.Subscriber
 
   @chars [?_, ?-, ?.] ++ Enum.to_list(?0..?9) ++ Enum.to_list(?a..?z) ++ Enum.to_list(?A..?Z)
 

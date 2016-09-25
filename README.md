@@ -1,6 +1,6 @@
-# Ki
+# Ku
 
-Ki is a simple pub/sub engine.
+Ku is a simple pub/sub engine.
 
 ## Usage
 

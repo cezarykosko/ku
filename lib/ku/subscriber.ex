@@ -1,10 +1,10 @@
 alias Experimental.GenStage
 
-defmodule Ki.Subscriber do
+defmodule Ku.Subscriber do
   use GenStage
 
   @moduledoc """
-  Process responsible for digesting messages published to `Ki.Queue`
+  Process responsible for digesting messages published to `Ku.Queue`
   and executing a given callback function if events' key matches given pattern.
   """
 

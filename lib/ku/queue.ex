@@ -1,10 +1,10 @@
 alias Experimental.GenStage
 
-defmodule Ki.Queue do
+defmodule Ku.Queue do
   use GenStage
 
   @moduledoc """
-  Process storing `Ki`'s event queue.
+  Process storing `Ku`'s event queue.
   """
 
   require Logger

@@ -1,4 +1,4 @@
-defmodule Ki.SubSupervisor do
+defmodule Ku.SubSupervisor do
   use Supervisor
 
   @moduledoc """
@@ -26,7 +26,7 @@ defmodule Ki.SubSupervisor do
   """
   def init(_) do
     children = [
-      worker(Ki.Subscriber, [])
+      worker(Ku.Subscriber, [])
     ]
     supervise children, strategy: :simple_one_for_one
   end

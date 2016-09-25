@@ -1,30 +1,30 @@
 alias Experimental.GenStage
 
-defmodule Ki do
+defmodule Ku do
 
   @moduledoc """
-  Main module of the `Ki` pub/sub system.
+  Main module of the `Ku` pub/sub system.
   """
 
   @doc """
-  Initializes Ki, by starting GenStage (if not yet started),
+  Initializes Ku, by starting GenStage (if not yet started),
   as well as required supervisors/workers.
   """
   def start do
-    :application.ensure_all_started(:ki)
-    Ki.Supervisor.start_link()
+    :application.ensure_all_started(:ku)
+    Ku.Supervisor.start_link()
   end
 
   @doc """
-  Given a pattern (see `Ki.Subscriber.pattern_matches/1`)
+  Given a pattern (see `Ku.Subscriber.pattern_matches/1`)
   and a function, spawns a subscriber process.
   Returns pid if successful.
 
   TODO: return ets ref
   """
   def subscribe(pattern, fun) do
-    {:ok, subscriber} = Ki.SubSupervisor.subscribe(pattern, fun)
-    GenStage.sync_subscribe(subscriber, to: Ki.Queue)
+    {:ok, subscriber} = Ku.SubSupervisor.subscribe(pattern, fun)
+    GenStage.sync_subscribe(subscriber, to: Ku.Queue)
     subscriber
   end
 
@@ -35,16 +35,16 @@ defmodule Ki do
   a `%{body: body, metadata: metadata}` map.
   """
   def publish(key, body, metadata \\ ()) do
-    GenStage.cast(Ki.Queue, {:publish, key, %{body: body, metadata: metadata}})
+    GenStage.cast(Ku.Queue, {:publish, key, %{body: body, metadata: metadata}})
   end
 
   @doc """
-  Removes all subscribers, effectively clearing Ki.
+  Removes all subscribers, effectively clearing Ku.
 
   TODO: Handle ets backup.
   """
   def clear do
-    Supervisor.which_children(Ki.SubSupervisor)
-    |> Enum.each(&(Supervisor.terminate_child(Ki.SubSupervisor, elem(&1, 1))))
+    Supervisor.which_children(Ku.SubSupervisor)
+    |> Enum.each(&(Supervisor.terminate_child(Ku.SubSupervisor, elem(&1, 1))))
   end
 end
