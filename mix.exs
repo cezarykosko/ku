@@ -19,6 +19,8 @@ defmodule Ki.Mixfile do
       {:gen_stage, "~> 0.4"},
       {:earmark, "~> 0.1", only: :dev},
       {:ex_doc, "~> 0.11", only: :dev},
+      {:excheck, "~> 0.5", only: :test},
+      {:triq, github: "triqng/triq", only: :test},
     ]
   end
 end

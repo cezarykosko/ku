@@ -17,29 +17,38 @@ defmodule Ki.Subscriber do
 
   @doc """
   Compiles `pattern` to a regexp using a set of rules:
+  - a comma-separated list surrounded by curly brackets is compiled
+    to a pipe-separated list surrounded by parentheses (Regex alternative),
   - `.` is compiled to `\.`,
-  - `*` is compiled to `[A-Za-z\d_\.]*`,
-  - `?` is compiled to `[A-Za-z\d_\.]`,
+  - `*` is compiled to `[A-Za-z_\.\d]*`,
+  - `?` is compiled to `[A-Za-z_\.\d]`,
   - any alphanumeric character is compiled to itself,
-  - `_` is compiled to itself.
-
-  TODO: implement
+  - `_` and `-` are compiled to themselves.
   """
-  def compile_pattern(pattern), do: pattern
+  def compile_pattern(pattern) do
+    pat = pattern
+    |> String.replace(".", "\\.")
+    |> String.replace("*", "[A-Za-z_\\.\\d]*")
+    |> String.replace("?", "[A-Za-z_\\.\\d]")
+    |> String.replace("{", "(")
+    |> String.replace("}", ")")
+    |> String.replace(",", "|")
+
+    {:ok, pat} = Regex.compile("^#{pat}$")
+    pat
+  end
 
   @doc """
   Initializes `GenStage` behaviour, compiling given pattern.
   """
-  def init({pattern, fun}) do
-    {:consumer, {pattern, compile_pattern(fun)}}
-  end
+  def init({pattern, fun}), do: {:consumer, {compile_pattern(pattern), fun}}
 
   @doc """
   Given a key and pattern, returns `true` if key matches the pattern,
   `false` otherwise.
   """
   def key_matches_pattern(key, pattern) do
-    key === pattern
+    Regex.match? pattern, key
   end
 
   @doc """

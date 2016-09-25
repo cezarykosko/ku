@@ -85,7 +85,7 @@ defmodule KiTest do
     end
   end
 
-   describe "Recovering state in case of failure" do
+   describe "Recovering state in case of" do
     test "queue's failure", fixture do
       Ki.subscribe "abc-queue", fixture.send_body.(self)
       Process.exit(Process.whereis(Ki.Queue), :normal)
@@ -106,7 +106,7 @@ defmodule KiTest do
 
     test "subscribers' supervisor failure", fixture do
       Ki.subscribe "abc", fixture.send_body.(self)
-      Process.exit(Process.whereis(Ki.SubSupervisor), :kill)
+      Process.exit(Process.whereis(Ki.SubSupervisor), :normal)
       Ki.publish "abc", :body
       assert_receive {:body, :body}, @recv_timeout
     end
