@@ -1,5 +1,3 @@
-alias Experimental.GenStage
-
 defmodule Ku do
 
   @moduledoc """
@@ -11,18 +9,18 @@ defmodule Ku do
   as well as required supervisors/workers.
   """
   def start do
-    :application.ensure_all_started(:ku)
+    :application.ensure_all_started :ku
     Ku.Supervisor.start_link()
   end
 
   @doc """
-  Publishes a message under a given key. Should key matches a subscriber's pattern,
+  Publishes a message under a given key. Should key match a subscriber's pattern,
   its callback function will be executed.
 
   Keys are strings containing any alphanumeric character (case sensitive), `.`, `-` and `_`.
   """
   def publish(key, body, metadata \\ ()) do
-    GenStage.cast(Ku.Queue, {:publish, key, %{body: body, metadata: metadata}})
+    Ku.Queue.publish key, %{body: body, metadata: metadata}
   end
 
   @doc """
@@ -42,22 +40,23 @@ defmodule Ku do
   Callbacks are `1`-arity functions.
   They will be passed (should relevant subscribers' patterns match some keys)
   maps with 2 keys: `body` and `metadata`.
-
-  TODO: return ets ref
   """
   def subscribe(pattern, fun) do
-    {:ok, subscriber} = Ku.SubSupervisor.subscribe(pattern, fun)
-    GenStage.sync_subscribe(subscriber, to: Ku.Queue)
+    {:ok, subscriber} = Ku.SubscriberManager.subscribe pattern, fun
     subscriber
   end
 
   @doc """
   Removes all subscribers, effectively clearing Ku.
-
-  TODO: Handle ets backup.
   """
   def clear do
-    Supervisor.which_children(Ku.SubSupervisor)
-    |> Enum.each(&(Supervisor.terminate_child(Ku.SubSupervisor, elem(&1, 1))))
+    Ku.SubscriberManager.unsubscribe_all()
+  end
+
+  @doc """
+  Terminates `Subscriber` with given `ref`, effectively unsubscribing its function.
+  """
+  def unsubscribe(ref) do
+    Ku.SubscriberManager.unsubscribe(ref)
   end
 end

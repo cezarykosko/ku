@@ -3,7 +3,7 @@ defmodule KuTest do
 
   doctest Ku
 
-  @recv_timeout 500
+  @recv_timeout 100
 
   setup_all do
     Ku.start
@@ -88,7 +88,8 @@ defmodule KuTest do
    describe "Recovering state in case of" do
     test "queue's failure", fixture do
       Ku.subscribe "abc-queue", fixture.send_body.(self)
-      Process.exit(Process.whereis(Ku.Queue), :normal)
+      Process.exit(Process.whereis(Ku.Queue), :kill)
+      :timer.sleep(@recv_timeout)
       Ku.publish "abc-queue", :body
       assert_receive {:body, :body}, @recv_timeout
       :timer.sleep(@recv_timeout)
@@ -96,8 +97,10 @@ defmodule KuTest do
     end
 
     test "subscriber's failure", fixture do
-      pid = Ku.subscribe "abc-sub", fixture.send_body.(self)
-      Process.exit(pid, :normal)
+      Ku.subscribe "abc-sub", fixture.send_body.(self)
+      [pid] = Ku.SubSupervisor.active_subscribers()
+      Process.exit(pid, :kill)
+      :timer.sleep(@recv_timeout)
       Ku.publish "abc-sub", :body
       assert_receive {:body, :body}, @recv_timeout
       :timer.sleep(@recv_timeout)
@@ -105,10 +108,23 @@ defmodule KuTest do
     end
 
     test "subscribers' supervisor failure", fixture do
-      Ku.subscribe "abc", fixture.send_body.(self)
-      Process.exit(Process.whereis(Ku.SubSupervisor), :normal)
-      Ku.publish "abc", :body
+      Ku.subscribe "abc-supervisor", fixture.send_body.(self)
+      Process.exit(Process.whereis(Ku.SubSupervisor), :kill)
+      :timer.sleep(@recv_timeout)
+      Ku.publish "abc-supervisor", :body
       assert_receive {:body, :body}, @recv_timeout
+      :timer.sleep(@recv_timeout)
+      Ku.clear()
+    end
+
+    test "subscribers' manager failure", fixture do
+      Ku.subscribe "abc-manager", fixture.send_body.(self)
+      Process.exit(Process.whereis(Ku.SubscriberManager), :kill)
+      :timer.sleep(@recv_timeout)
+      Ku.publish "abc-manager", :body
+      assert_receive {:body, :body}, @recv_timeout
+      :timer.sleep(@recv_timeout)
+      Ku.clear()
     end
    end
 

@@ -31,12 +31,18 @@ Callbacks are `1`-arity functions. They will be passed (should relevant subscrib
 `Ku.subscribe` takes two parameters:
 - a key pattern,
 - a callback to be executed.
+The function's return value is a `ref`, being an interlan `Subscriber`'s identifier.
 
 ### Publishing
 `Ku.publish` takes three parameters:
 - a key string
 - message body,
 - message metadata (`()` by default).
+
+### Unsubscribing
+Two functions are given for cancelling subscriptions:
+- `Ku.unsubscribe/1`, cancelling a single subscription, given its `ref`,
+- `Ku.clear/0`, wiping all subscriptions.
 
 ## License
 

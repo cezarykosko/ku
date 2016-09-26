@@ -2,6 +2,7 @@ alias Experimental.GenStage
 
 defmodule Ku.Subscriber do
   use GenStage
+  require Logger
 
   @moduledoc """
   Process responsible for digesting messages published to `Ku.Queue`
@@ -12,7 +13,10 @@ defmodule Ku.Subscriber do
   Starts `Subscriber` as a `GenStage` process.
   """
   def start_link(pattern, fun) do
-    GenStage.start_link(__MODULE__, {pattern, fun})
+    Logger.debug "Starting Subscriber for pattern: #{inspect(pattern)}"
+    res = {:ok, pid} = GenStage.start_link __MODULE__, {pattern, fun}
+    attach pid
+    res
   end
 
   @doc """
@@ -34,14 +38,32 @@ defmodule Ku.Subscriber do
     |> String.replace("}", ")")
     |> String.replace(",", "|")
 
-    {:ok, pat} = Regex.compile("^#{pat}$")
+    {:ok, pat} = Regex.compile "^#{pat}$"
     pat
   end
 
   @doc """
-  Initializes `GenStage` behaviour, compiling given pattern.
+  Initializes `GenStage` behaviour.
   """
-  def init({pattern, fun}), do: {:consumer, {compile_pattern(pattern), fun}}
+  def init({pattern, fun}) do
+    {:consumer, {pattern, fun, nil}}
+  end
+
+  @doc """
+  Attaches process to `Ku.Queue` and updates its state
+  """
+  defp attach(pid) do
+    Logger.debug "Attaching #{inspect(pid) }to queue..."
+    {:ok, sub_ref} = Ku.Queue.attach pid
+    GenStage.cast pid, {:attach, sub_ref}
+  end
+
+  @doc """
+  Handles cast with `GenStage` consumer ref, saving it in process' state.
+  """
+  def handle_cast({:attach, ref}, {pattern, fun, _}) do
+    {:noreply, [], {pattern, fun, ref}}
+  end
 
   @doc """
   Given a key and pattern, returns `true` if key matches the pattern,
@@ -57,11 +79,24 @@ defmodule Ku.Subscriber do
   the process' function is executed, being given the event's message.
   """
   def handle_events([], _, s), do: {:noreply, [], s}
-  def handle_events(events, _from, {pattern, fun}) do
-    events
+  def handle_events(events, _from, {pattern, fun, sub_ref}) do
+    Logger.debug "Received #{length(events)} events."
+    filtered_events = events
     |> Enum.filter(&(key_matches_pattern(&1.key, pattern)))
+
+    Logger.debug "#{length(filtered_events)} matching key pattern"
+
+    filtered_events
     |> Enum.each(&(fun.(&1.message)))
 
-    {:noreply, [], {pattern, fun}}
+    {:noreply, [], {pattern, fun, sub_ref}}
+  end
+
+  @doc """
+  On termination, detaches `GenStage` ref from `Ku.Queue`.
+  """
+  def terminate(reason, {_, _, sub_ref}) do
+    Logger.info "Subscriber #{inspect(self)} terminating due to reason: #{inspect(reason)}"
+    Ku.Queue.detach sub_ref
   end
 end
