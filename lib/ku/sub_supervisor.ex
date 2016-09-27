@@ -13,35 +13,33 @@ defmodule Ku.SubSupervisor do
   @doc """
   Spawns a new subscriber process.
   """
-  def subscribe(pattern, fun) do
-    res = {:ok, pid} = Supervisor.start_child __MODULE__, [pattern, fun]
+  def subscribe(pattern, fun, ref) do
+    res = {:ok, pid} = Supervisor.start_child __MODULE__, worker(Ku.Subscriber, [pattern, fun], id: ref)
     Logger.debug "Created child: #{inspect(pid)}"
     res
   end
 
   @doc """
-  Terminates a process given its `pid`.
+  Terminates a process given its `ref`.
   """
-  def unsubscribe(pid) do
+  def unsubscribe(ref) do
     Logger.debug "Terminating #{inspect(pid)}"
-    Supervisor.terminate_child __MODULE__, pid
+    Supervisor.terminate_child __MODULE__, ref
+    Supervisor.delete_child __MODULE__, ref
   end
 
   @doc """
-  Returns a list of `pid`s of supervisor's current processes.
+  Returns a list of `{ref, pid}` pairs of supervisor's current processes.
   """
   def active_subscribers do
     Supervisor.which_children(__MODULE__)
-    |> Enum.map(&(elem(&1, 1)))
+    |> Enum.map(fn {a,b,_,_} -> {a,b} end)
   end
 
   @doc """
   Sets the `Supervisor` behaviour up.
   """
   def init(_) do
-    children = [
-      worker(Ku.Subscriber, [])
-    ]
-    supervise children, strategy: :simple_one_for_one
+    supervise [], strategy: :one_for_one
   end
 end

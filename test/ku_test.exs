@@ -99,7 +99,7 @@ defmodule KuTest do
 
     test "subscriber's failure", fixture do
       Ku.subscribe "abc-sub", fixture.send_body.(self)
-      [pid] = Ku.SubSupervisor.active_subscribers()
+      [{_, pid}] = Ku.SubSupervisor.active_subscribers()
       Process.exit(pid, :kill)
       :timer.sleep(@recv_timeout)
       Ku.publish "abc-sub", :body
@@ -131,9 +131,9 @@ defmodule KuTest do
     test "subscribers' manager failure after subscriber's failure", fixture do
       Ku.subscribe "abc-subman", fixture.send_body.(self)
       Process.exit(Process.whereis(Ku.SubscriberManager), :kill)
-      :timer.sleep(2*@recv_timeout)
-      [x] = Ku.SubSupervisor.active_subscribers()
-      Process.exit(x, :kill)
+      :timer.sleep(@recv_timeout)
+      [{_, pid}] = Ku.SubSupervisor.active_subscribers()
+      Process.exit(pid, :kill)
       :timer.sleep(@recv_timeout)
       Ku.publish "abc-subman", "subman"
       assert_receive {:body, "subman"}, @recv_timeout
@@ -150,6 +150,57 @@ defmodule KuTest do
       assert_receive {:body, :body}, @recv_timeout
       :timer.sleep(@recv_timeout)
       Ku.clear()
+    end
+  end
+
+
+   describe "processes check on function calls" do
+
+    test "subscribe spawns processes", _fixture do
+      ref1 = Ku.subscribe "first", &IO.inspect/1
+      ref2 = Ku.subscribe "second", &IO.inspect/1
+      children = Ku.SubSupervisor.active_subscribers()
+      |> Enum.map(&(elem(&1, 0)))
+
+      assert ref1 in children
+      assert ref2 in children
+      assert length(children) == 2
+
+      Ku.clear()
+    end
+
+    test "unsubscribe kills processes", _fixture do
+      ref1 = Ku.subscribe "first", &IO.inspect/1
+      ref2 = Ku.subscribe "second", &IO.inspect/1
+
+      Ku.unsubscribe ref1
+
+      assert [^ref2] = Ku.SubSupervisor.active_subscribers()
+      |> Enum.map(&(elem(&1, 0)))
+
+      Ku.clear()
+    end
+
+    test "unsubscribe works after subscriber's failure" do
+      ref1 = Ku.subscribe "first", &IO.inspect/1
+
+      [{_, pid}] = Ku.SubSupervisor.active_subscribers()
+      Process.exit(pid, :kill)
+
+      Ku.unsubscribe ref1
+
+      assert [] = Ku.SubSupervisor.active_subscribers()
+
+      Ku.clear()
+    end
+
+    test "clear kills all processes", _fixture do
+      Ku.subscribe "first", &IO.inspect/1
+      Ku.subscribe "second", &IO.inspect/1
+
+      Ku.clear()
+
+      assert [] = Ku.SubSupervisor.active_subscribers()
     end
   end
 end

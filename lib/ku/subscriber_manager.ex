@@ -12,10 +12,10 @@ defmodule Ku.SubscriberManager do
 
   def init(table) do
     restarted = :ets.foldl(
-      fn {ref, pid, pattern, function}, acc ->
+      fn {ref, pattern, function}, acc ->
         Logger.info "Restarting Subscriber (ref: #{inspect(ref)})"
-        pid = spawn_subscriber(pattern, function)
-        [{ref, pid, pattern, function} | acc]
+        _pid = spawn_subscriber(pattern, function, ref)
+        [{ref, pattern, function} | acc]
       end,
       [],
       table)
@@ -36,14 +36,14 @@ defmodule Ku.SubscriberManager do
     GenServer.call __MODULE__, {:unsubscribe_all}
   end
 
-  defp spawn_subscriber(compiled_pattern, function) do
-    {:ok, pid} = Ku.SubSupervisor.subscribe compiled_pattern, function
+  defp spawn_subscriber(compiled_pattern, function, ref) do
+    {:ok, pid} = Ku.SubSupervisor.subscribe compiled_pattern, function, ref
     Logger.debug "Spawned subscriber: #{inspect(pid)}"
     pid
   end
 
-  defp terminate_subscriber(pid) do
-    Ku.SubSupervisor.unsubscribe pid
+  defp terminate_subscriber(ref) do
+    Ku.SubSupervisor.unsubscribe ref
     Logger.debug "Terminated subscriber: #{inspect(pid)}"
   end
 
@@ -51,18 +51,18 @@ defmodule Ku.SubscriberManager do
     ref = make_ref()
     compiled_pattern = Ku.Subscriber.compile_pattern pattern
     Logger.info "Starting Subscriber for pattern: #{inspect(pattern)}"
-    pid = spawn_subscriber compiled_pattern, function
-    :ets.insert table, {ref, pid, compiled_pattern, function}
+    _pid = spawn_subscriber compiled_pattern, function, ref
+    :ets.insert table, {ref, compiled_pattern, function}
     {:reply, {:ok, ref}, table}
   end
   def handle_call({:unsubscribe, ref}, _from, table) do
-    [{^ref, pid, _pattern, _function}] = :ets.lookup table, ref
-    terminate_subscriber pid
+    terminate_subscriber ref
     :ets.delete table, ref
     {:reply, :ok, table}
   end
   def handle_call({:unsubscribe_all}, _from, table) do
     Ku.SubSupervisor.active_subscribers()
+    |> Enum.map(&(elem(&1, 0)))
     |> Enum.each(&terminate_subscriber/1)
 
     :ets.delete_all_objects table
