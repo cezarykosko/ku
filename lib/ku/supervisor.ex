@@ -26,8 +26,7 @@ defmodule Ku.Supervisor do
   def init(_) do
     children =  [
       worker(Ku.Queue, []),
-      supervisor(Ku.SubSupervisor, []),
-      worker(Ku.SubscriberManager, [@procs_table]),
+      supervisor(Ku.SubscriberSupervisor, [@procs_table]),
     ]
     supervise children, strategy: :rest_for_one
   end

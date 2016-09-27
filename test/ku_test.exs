@@ -6,8 +6,9 @@ defmodule KuTest do
   @recv_timeout 100
 
   setup_all do
-    Ku.start
+    {:ok, sup} = Ku.start
     [
+      supervisor: sup,
       send_body: fn addr -> (fn msg -> send addr, {:body, msg.body} end) end,
       send_meta: fn addr -> (fn msg -> send addr, {:meta, msg.metadata} end) end,
     ]
@@ -107,7 +108,7 @@ defmodule KuTest do
       Ku.clear()
     end
 
-    test "subscribers' supervisor failure", fixture do
+    test "subscribers' sub-supervisor failure", fixture do
       Ku.subscribe "abc-supervisor", fixture.send_body.(self)
       Process.exit(Process.whereis(Ku.SubSupervisor), :kill)
       :timer.sleep(@recv_timeout)
@@ -126,6 +127,29 @@ defmodule KuTest do
       :timer.sleep(@recv_timeout)
       Ku.clear()
     end
-   end
 
+    test "subscribers' manager failure after subscriber's failure", fixture do
+      Ku.subscribe "abc-subman", fixture.send_body.(self)
+      Process.exit(Process.whereis(Ku.SubscriberManager), :kill)
+      :timer.sleep(2*@recv_timeout)
+      [x] = Ku.SubSupervisor.active_subscribers()
+      Process.exit(x, :kill)
+      :timer.sleep(@recv_timeout)
+      Ku.publish "abc-subman", "subman"
+      assert_receive {:body, "subman"}, @recv_timeout
+      :timer.sleep(@recv_timeout)
+      Ku.clear()
+    end
+
+    test "subscribers' supervisor failure", fixture do
+      Ku.subscribe "abc-sub-supervisor", fixture.send_body.(self)
+      Supervisor.terminate_child(fixture.supervisor, Ku.SubscriberSupervisor)
+      Supervisor.restart_child(fixture.supervisor, Ku.SubscriberSupervisor)
+      :timer.sleep(@recv_timeout)
+      Ku.publish "abc-sub-supervisor", :body
+      assert_receive {:body, :body}, @recv_timeout
+      :timer.sleep(@recv_timeout)
+      Ku.clear()
+    end
+  end
 end

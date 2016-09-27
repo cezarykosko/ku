@@ -11,16 +11,11 @@ defmodule Ku.SubscriberManager do
   end
 
   def init(table) do
-    running_subscribers = Ku.SubSupervisor.active_subscribers()
     restarted = :ets.foldl(
       fn {ref, pid, pattern, function}, acc ->
-        if pid in running_subscribers do
-          acc
-        else
-          Logger.info "Restarting Subscriber (ref: #{inspect(ref)})"
-          pid = spawn_subscriber(pattern, function)
-          [{ref, pid, pattern, function} | acc]
-        end
+        Logger.info "Restarting Subscriber (ref: #{inspect(ref)})"
+        pid = spawn_subscriber(pattern, function)
+        [{ref, pid, pattern, function} | acc]
       end,
       [],
       table)
@@ -67,13 +62,9 @@ defmodule Ku.SubscriberManager do
     {:reply, :ok, table}
   end
   def handle_call({:unsubscribe_all}, _from, table) do
-    :ets.foldl(
-      fn {_, pid, _, _}, :ok ->
-        terminate_subscriber(pid)
-        :ok
-      end,
-      :ok,
-      table)
+    Ku.SubSupervisor.active_subscribers()
+    |> Enum.each(&terminate_subscriber/1)
+
     :ets.delete_all_objects table
     {:reply, :ok, table}
   end
