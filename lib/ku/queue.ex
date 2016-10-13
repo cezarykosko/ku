@@ -54,10 +54,6 @@ defmodule Ku.Queue do
     dispatch queue, new_demand + demand
   end
 
-  @doc """
-  Dispatches at most `demand` messages from `queue`, adding them
-  on top of `events`
-  """
   defp dispatch(queue, demand, events \\ []) do
     with d when d > 0 <- demand,
          {item, queue} = :queue.out(queue),

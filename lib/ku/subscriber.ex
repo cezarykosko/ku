@@ -49,9 +49,6 @@ defmodule Ku.Subscriber do
     {:consumer, {pattern, fun, nil}}
   end
 
-  @doc """
-  Attaches process to `Ku.Queue` and updates its state
-  """
   defp attach(pid) do
     Logger.debug "Attaching #{inspect(pid) }to queue..."
     {:ok, sub_ref} = Ku.Queue.attach pid
