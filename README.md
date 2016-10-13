@@ -1,5 +1,7 @@
 # Ku
 
+[![CircleCI](https://circleci.com/gh/cezarykosko/ku.svg?style=svg)](https://circleci.com/gh/cezarykosko/ku)
+
 Ku is a simple pub/sub engine.
 
 ## Usage
